@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Property Investment Decision Calculator</title>
+  <style>
+    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; }
+    body { margin: 0; background: #f6f7fb; color: #111; }
+    .wrap { max-width: 1180px; margin: 24px auto; padding: 0 16px; }
+    h1 { margin: 0 0 12px; font-size: 22px; }
+    .grid { display: grid; gap: 14px; grid-template-columns: 1fr; }
+    @media (min-width: 980px) { .grid { grid-template-columns: 1.15fr 0.85fr; } }
+    .card { background: white; border-radius: 14px; padding: 14px; box-shadow: 0 8px 25px rgba(0,0,0,.06); }
+    .row { display: grid; gap: 10px; grid-template-columns: 1fr; margin-bottom: 10px; }
+    @media (min-width: 760px) { .row { grid-template-columns: repeat(3, 1fr); } }
+    label { font-size: 12px; color: #333; display: block; margin-bottom: 6px; }
+    input, select { width: 100%; box-sizing: border-box; padding: 10px 10px; border-radius: 10px; border: 1px solid #d7dbe7; background: #fff; }
+    input:focus { outline: 2px solid #b8c3ff; border-color: #95a6ff; }
+    .btns { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+    button { padding: 10px 14px; border-radius: 10px; border: 1px solid #d7dbe7; background: #111; color: #fff; cursor: pointer; }
+    button.secondary { background: #fff; color: #111; }
+    button:active { transform: translateY(1px); }
+    .out h2 { margin: 0 0 10px; font-size: 16px; }
+    .kpi { display: grid; gap: 10px; grid-template-columns: 1fr; }
+    @media (min-width: 760px) { .kpi { grid-template-columns: repeat(2, 1fr); } }
+    .k { padding: 12px; border-radius: 12px; background: #f3f5ff; }
+    .k .t { font-size: 12px; color: #333; }
+    .k .v { font-size: 18px; font-weight: 700; margin-top: 4px; }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 8px 6px; border-bottom: 1px solid #eceff7; font-size: 13px; text-align: right; }
+    th:first-child, td:first-child { text-align: left; }
+    .note { font-size: 12px; color: #444; line-height: 1.4; }
+    .pill { display:inline-block; padding: 2px 8px; border-radius: 999px; background:#eef; font-size: 12px; margin-left: 6px; }
+    .sectionTitle { margin: 12px 0 8px; font-size: 13px; font-weight: 700; color:#222; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Property Investment Decision Calculator <span class="pill">Opportunity-cost aware</span></h1>
+
+    <div class="grid">
+      <div class="card">
+        <div class="row">
+          <div>
+            <label>Purchase price ($)</label>
+            <input id="price" type="number" value="950000" step="1000">
+          </div>
+          <div>
+            <label>Loan amount ($)</label>
+            <input id="loan" type="number" value="900000" step="1000">
+          </div>
+          <div>
+            <label>Holding period (years)</label>
+            <input id="years" type="number" value="5" step="1" min="1" max="40">
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Loan interest rate (% p.a.)</label>
+            <input id="loanRate" type="number" value="5.7" step="0.01">
+          </div>
+          <div>
+            <label>Loan term (years)</label>
+            <input id="term" type="number" value="30" step="1" min="1" max="40">
+          </div>
+          <div>
+            <label>Offset balance ($) (constant)</label>
+            <input id="offset" type="number" value="0" step="1000">
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Max cash available for offset optimizer ($)</label>
+            <input id="maxOffset" type="number" value="200000" step="1000">
+          </div>
+          <div>
+            <label>Stamp duty ($)</label>
+            <input id="stamp" type="number" value="40000" step="500">
+          </div>
+          <div>
+            <label>Other upfront costs ($) (e.g., conveyancing, inspections)</label>
+            <input id="upfrontOther" type="number" value="3000" step="100">
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Selling costs (agent % of sale price)</label>
+            <input id="agentPct" type="number" value="2.2" step="0.1">
+          </div>
+          <div>
+            <label>Selling legal/other fixed costs ($)</label>
+            <input id="sellFixed" type="number" value="3000" step="100">
+          </div>
+          <div>
+            <label>Sell at end of period?</label>
+            <select id="sell">
+              <option value="yes" selected>Yes (include selling costs)</option>
+              <option value="no">No (keep property)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Annual property growth (% p.a.)</label>
+            <input id="growth" type="number" value="4.4" step="0.1">
+          </div>
+          <div>
+            <label>Rent you avoid ($/week) (if living in property)</label>
+            <input id="rentWeek" type="number" value="700" step="10">
+          </div>
+          <div>
+            <label>Council rates ($/year)</label>
+            <input id="ratesYear" type="number" value="2800" step="50">
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Rent growth (% p.a.)</label>
+            <input id="rentGrowth" type="number" value="3.0" step="0.1">
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <input type="text" value="" disabled style="opacity:.35">
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <input type="text" value="" disabled style="opacity:.35">
+          </div>
+        </div>
+
+
+        <div class="row">
+          <div>
+            <label>Home insurance ($/year)</label>
+            <input id="insYear" type="number" value="1800" step="50">
+          </div>
+          <div>
+            <label>Maintenance & repairs ($/year)</label>
+            <input id="maintYear" type="number" value="6000" step="100">
+          </div>
+          <div>
+            <label style="display:flex; gap:10px; align-items:center; margin-top:20px;">
+              <input type="checkbox" id="includeMaint" checked style="width:auto;">
+              Include maintenance & insurance
+            </label>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>Opportunity return (% p.a.)</label>
+            <input id="oppRate" type="number" value="4.7" step="0.01">
+          </div>
+          <div>
+            <label>Inflation (% p.a.)</label>
+            <input id="infl" type="number" value="2.5" step="0.1">
+          </div>
+          <div>
+            <label>Buy later delay (years) (comparison)</label>
+            <input id="delayYears" type="number" value="2" step="1" min="0" max="20">
+          </div>
+        </div>
+
+        <div class="btns">
+          <button id="calcBtn">Calculate</button>
+          <button class="secondary" id="resetBtn" title="Resets to the default values in this file">Reset to defaults</button>
+        </div>
+
+        <p class="note">
+          Monthly opportunity cost uses your corrected logic:
+          <span class="mono">(mortgage + owner costs monthly) − rent monthly</span>, invested at the opportunity rate (if positive).<br/>
+          Offset cash also has opportunity cost (invest elsewhere vs sit in offset).
+        </p>
+      </div>
+
+      <div class="card out">
+        <h2>Results</h2>
+        <div class="kpi">
+          <div class="k"><div class="t">Monthly repayment (P&I)</div><div id="kRepay" class="v">$–</div></div>
+          <div class="k"><div class="t">Interest paid (holding period)</div><div id="kInterest" class="v">$–</div></div>
+          <div class="k"><div class="t">Loan balance after period</div><div id="kBal" class="v">$–</div></div>
+          <div class="k"><div class="t">Equity after period (after selling costs if chosen)</div><div id="kEq" class="v">$–</div></div>
+          <div class="k"><div class="t">Nominal profit (your framework)</div><div id="kNom" class="v">$–</div></div>
+          <div class="k"><div class="t">Real profit (today’s $)</div><div id="kReal" class="v">$–</div></div>
+
+          <div class="k"><div class="t">Offset vs Invest advantage (5 yrs)</div><div id="kOffsetAdv" class="v">$–</div></div>
+          <div class="k"><div class="t">Best offset (optimizer)</div><div id="kBestOffset" class="v">$–</div></div>
+
+          <div class="k"><div class="t">Break-even purchase price</div><div id="kBEP" class="v">$–</div></div>
+          <div class="k"><div class="t">Break-even growth rate</div><div id="kBEG" class="v">–%</div></div>
+
+          <div class="k"><div class="t">Buy now vs buy later (nominal)</div><div id="kNowLater" class="v">$–</div></div>
+          <div class="k"><div class="t">Buy now vs buy later (real)</div><div id="kNowLaterReal" class="v">$–</div></div>
+        </div>
+
+        <div class="sectionTitle">Breakdown (your framework)</div>
+        <table>
+          <tbody id="breakdown"></tbody>
+        </table>
+
+        <p class="note">
+          “Buy later” assumes you keep renting during the delay years, invest upfront cash + monthly difference,
+          then buy at the then-market price (based on the same growth rate), with the same LVR style (deposit stays the same %).<br/>
+          You can adjust the delay years and growth to see the impact.
+        </p>
+
+        <p class="note" style="margin-top:12px; text-align:right;">
+          Developed by <b>Dr. Sam Pitawala</b>
+        </p>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const fmt0 = (n) => {
+    if (!isFinite(n)) return "–";
+    const sign = n < 0 ? "-" : "";
+    const abs = Math.abs(n);
+    return sign + "$" + abs.toLocaleString(undefined, { maximumFractionDigits: 0 });
+  };
+  const fmtPct = (x) => isFinite(x) ? (x * 100).toFixed(2) + "%" : "–%";
+
+  function pmt(rateMonthly, nper, pv) {
+    if (rateMonthly === 0) return pv / nper;
+    const r = rateMonthly;
+    return (r * pv) / (1 - Math.pow(1 + r, -nper));
+  }
+
+  function amortize({ principal, annualRate, termYears, months, offset = 0 }) {
+    const r = annualRate / 12;
+    const n = termYears * 12;
+    const payment = pmt(r, n, principal);
+
+    let bal = principal;
+    let interestPaid = 0;
+    let principalPaid = 0;
+
+    for (let i = 0; i < months; i++) {
+      const interestBase = Math.max(0, bal - offset);
+      const interest = interestBase * r;
+      const principalPart = Math.max(0, payment - interest);
+
+      const principalApplied = Math.min(principalPart, bal);
+      bal -= principalApplied;
+
+      interestPaid += interest;
+      principalPaid += principalApplied;
+
+      if (bal <= 0) { bal = 0; break; }
+    }
+    return { payment, balance: bal, interestPaid, principalPaid };
+  }
+
+  function fvLump(pv, annualRate, years) {
+    return pv * Math.pow(1 + annualRate, years);
+  }
+
+  function fvVariable(contribs, annualRate) {
+    // contribs: array of monthly contributions made at end of each month (index 0 => month 1)
+    // Returns FV at end of horizon.
+    const r = annualRate / 12;
+    let fv = 0;
+    for (let i = 0; i < contribs.length; i++) {
+      const monthsRemaining = contribs.length - 1 - i;
+      fv += contribs[i] * Math.pow(1 + r, monthsRemaining);
+    }
+    return fv;
+  }
+
+  function fvMonthly(pmtAmt, annualRate, months) {
+    const r = annualRate / 12;
+    if (r === 0) return pmtAmt * months;
+    return pmtAmt * ((Math.pow(1 + r, months) - 1) / r);
+  }
+
+  function resetDefaults() { location.reload(); }
+
+  function readInputs() {
+    return {
+      price: +document.getElementById("price").value,
+      loan: +document.getElementById("loan").value,
+      years: +document.getElementById("years").value,
+
+      loanRate: +document.getElementById("loanRate").value / 100,
+      term: +document.getElementById("term").value,
+
+      offset: +document.getElementById("offset").value,
+      maxOffset: +document.getElementById("maxOffset").value,
+
+      stamp: +document.getElementById("stamp").value,
+      upfrontOther: +document.getElementById("upfrontOther").value,
+
+      agentPct: +document.getElementById("agentPct").value / 100,
+      sellFixed: +document.getElementById("sellFixed").value,
+      sell: document.getElementById("sell").value,
+
+      growth: +document.getElementById("growth").value / 100,
+
+      rentWeek: +document.getElementById("rentWeek").value,
+      rentGrowth: +document.getElementById("rentGrowth").value / 100,
+      ratesYear: +document.getElementById("ratesYear").value,
+      insYear: +document.getElementById("insYear").value,
+      maintYear: +document.getElementById("maintYear").value,
+      includeMaint: document.getElementById("includeMaint").checked,
+
+      oppRate: +document.getElementById("oppRate").value / 100,
+      infl: +document.getElementById("infl").value / 100,
+
+      delayYears: +document.getElementById("delayYears").value
+    };
+  }
+
+  function simulateScenario(params) {
+    const {
+      price, loan, years, loanRate, term, offset,
+      stamp, upfrontOther, agentPct, sellFixed, sell,
+      growth, rentWeek, rentGrowth, ratesYear, insYear, maintYear, includeMaint,
+      oppRate
+    } = params;
+
+    const months = Math.round(years * 12);
+    const deposit = Math.max(0, price - loan);
+
+    const am = amortize({ principal: loan, annualRate: loanRate, termYears: term, months, offset });
+    const monthlyRepay = am.payment;
+
+    const futurePrice = price * Math.pow(1 + growth, years);
+    const sellingCost = (sell === "yes") ? (futurePrice * agentPct + sellFixed) : 0;
+    const equity = (futurePrice - sellingCost) - am.balance;
+
+    const maintInsYear = includeMaint ? (insYear + maintYear) : 0;
+    const ownerCosts5y = (ratesYear + maintInsYear) * years;
+    const ownerCostsMonthly = (ratesYear + maintInsYear) / 12;
+
+    // Rent grows over time (monthly comp approximation based on annual rate)
+    const baseRentMonthly = (rentWeek * 52) / 12;
+    const rg = (params.rentGrowth ?? 0); // annual rent growth as decimal
+
+    let rentSaved5y = 0;
+    const investContribs = [];
+
+    for (let m = 0; m < months; m++) {
+      // rent for month m (m=0 is first month)
+      const rent_m = baseRentMonthly * Math.pow(1 + rg, m / 12);
+      rentSaved5y += rent_m;
+
+      const diff_m = (monthlyRepay + ownerCostsMonthly) - rent_m;
+      investContribs.push(Math.max(0, diff_m));
+    }
+
+    const upfrontCash = deposit + stamp + upfrontOther;
+
+    const fvUpfront = fvLump(upfrontCash, oppRate, years);
+    const oppUpfrontInterest = fvUpfront - upfrontCash;
+
+    const fvInvest = fvVariable(investContribs, oppRate);
+    const sumInvest = investContribs.reduce((a, b) => a + b, 0);
+    const oppMonthlyInterest = fvInvest - sumInvest;
+
+    const fvOffset = fvLump(offset, oppRate, years);
+    const oppOffsetInterest = fvOffset - offset;
+
+    // For display helper, show the first-month investable diff (if renting instead)
+    const investableMonthly = investContribs.length ? investContribs[0] : 0;
+
+    const nominalProfit =
+      equity
+      - am.interestPaid
+      - stamp
+      - deposit
+      - upfrontOther
+      + rentSaved5y
+      - ownerCosts5y
+      - oppUpfrontInterest
+      - oppMonthlyInterest
+      - oppOffsetInterest;
+
+    return {
+      monthlyRepay,
+      interestPaid: am.interestPaid,
+      balance: am.balance,
+      equity,
+      futurePrice,
+      sellingCost,
+      deposit,
+      upfrontCash,
+      rentSaved5y,
+      ownerCosts5y,
+      investableMonthly,
+      oppUpfrontInterest,
+      oppMonthlyInterest,
+      oppOffsetInterest,
+      nominalProfit
+    };
+  }
+
+  function solveBreakEvenPrice(baseParams) {
+    let lo = 0.5 * baseParams.price;
+    let hi = 1.8 * baseParams.price;
+    const f = (p) => simulateScenario({ ...baseParams, price: p }).nominalProfit;
+
+    let flo = f(lo), fhi = f(hi);
+    let tries = 0;
+    while (flo * fhi > 0 && tries < 8) {
+      hi *= 1.25;
+      fhi = f(hi);
+      tries++;
+    }
+    if (flo * fhi > 0) return NaN;
+
+    for (let i = 0; i < 50; i++) {
+      const mid = (lo + hi) / 2;
+      const fm = f(mid);
+      if (Math.abs(fm) < 1) return mid;
+      if (flo * fm <= 0) { hi = mid; fhi = fm; }
+      else { lo = mid; flo = fm; }
+    }
+    return (lo + hi) / 2;
+  }
+
+  function solveBreakEvenGrowth(baseParams) {
+    let lo = -0.05;
+    let hi = 0.15;
+    const f = (g) => simulateScenario({ ...baseParams, growth: g }).nominalProfit;
+
+    let flo = f(lo), fhi = f(hi);
+    if (flo * fhi > 0) return NaN;
+
+    for (let i = 0; i < 55; i++) {
+      const mid = (lo + hi) / 2;
+      const fm = f(mid);
+      if (Math.abs(fm) < 1) return mid;
+      if (flo * fm <= 0) { hi = mid; fhi = fm; }
+      else { lo = mid; flo = fm; }
+    }
+    return (lo + hi) / 2;
+  }
+
+  function optimizeOffset(baseParams) {
+    const maxOff = Math.max(0, baseParams.maxOffset);
+    if (maxOff <= 0) {
+      const p0 = simulateScenario({ ...baseParams, offset: 0 }).nominalProfit;
+      return { bestOffset: 0, bestProfit: p0 };
+    }
+
+    let bestOffset = 0;
+    let bestProfit = -Infinity;
+
+    const coarseSteps = 40;
+    for (let i = 0; i <= coarseSteps; i++) {
+      const off = (maxOff * i) / coarseSteps;
+      const prof = simulateScenario({ ...baseParams, offset: off }).nominalProfit;
+      if (prof > bestProfit) { bestProfit = prof; bestOffset = off; }
+    }
+
+    let span = maxOff / coarseSteps;
+    for (let round = 0; round < 6; round++) {
+      const lo = Math.max(0, bestOffset - span);
+      const hi = Math.min(maxOff, bestOffset + span);
+      const steps = 30;
+
+      bestProfit = -Infinity;
+      let newBest = bestOffset;
+
+      for (let i = 0; i <= steps; i++) {
+        const off = lo + ((hi - lo) * i) / steps;
+        const prof = simulateScenario({ ...baseParams, offset: off }).nominalProfit;
+        if (prof > bestProfit) { bestProfit = prof; newBest = off; }
+      }
+      bestOffset = newBest;
+      span *= 0.35;
+    }
+    return { bestOffset, bestProfit };
+  }
+
+  function compareBuyNowVsLater(baseParams) {
+    const d = Math.max(0, Math.min(baseParams.delayYears, baseParams.years));
+    const totalYears = baseParams.years;
+    const monthsDelay = Math.round(d * 12);
+    const yearsRemain = totalYears - d;
+
+    const now = simulateScenario(baseParams);
+    if (yearsRemain <= 0.0001) return { nominalDelta: now.nominalProfit };
+
+    const priceLater = baseParams.price * Math.pow(1 + baseParams.growth, d);
+
+    const depositPct = Math.max(0, (baseParams.price - baseParams.loan) / baseParams.price);
+    const depositLater = depositPct * priceLater;
+    const loanLater = Math.max(0, priceLater - depositLater);
+
+    const maintInsYear = baseParams.includeMaint ? (baseParams.insYear + baseParams.maintYear) : 0;
+    const ownerCostsMonthly = (baseParams.ratesYear + maintInsYear) / 12;
+
+    const baseRentMonthly = (baseParams.rentWeek * 52) / 12;
+    const rgDelay = (baseParams.rentGrowth ?? 0);
+
+    // During the delay period, rent grows and the investable monthly difference varies
+    const investDelay = [];
+    for (let m = 0; m < monthsDelay; m++) {
+      const rent_m = baseRentMonthly * Math.pow(1 + rgDelay, m / 12);
+      const diff_m = (now.monthlyRepay + ownerCostsMonthly) - rent_m;
+      investDelay.push(Math.max(0, diff_m));
+    }
+
+    const depositNow = Math.max(0, baseParams.price - baseParams.loan);
+    const upfrontCashNow = depositNow + baseParams.stamp + baseParams.upfrontOther;
+
+    const fvUpToD = fvLump(upfrontCashNow, baseParams.oppRate, d);
+    const fvMonthlyToD = fvVariable(investDelay, baseParams.oppRate);
+    const investedAtD = fvUpToD + fvMonthlyToD;
+
+    const upfrontNeededAtD = depositLater + baseParams.stamp + baseParams.upfrontOther;
+    const remainingInvested = Math.max(0, investedAtD - upfrontNeededAtD);
+
+    const laterParams = {
+      ...baseParams,
+      price: priceLater,
+      loan: loanLater,
+      years: yearsRemain,
+      offset: baseParams.offset,
+      // rent level at the time you start owning (after delay)
+      rentWeek: baseParams.rentWeek * Math.pow(1 + (baseParams.rentGrowth ?? 0), d)
+    };
+    const later = simulateScenario(laterParams);
+
+    const fvRemain = fvLump(remainingInvested, baseParams.oppRate, yearsRemain);
+    const extraFromInvestment = fvRemain - remainingInvested;
+
+    const laterAdjustedNominal = later.nominalProfit + extraFromInvestment;
+    const nominalDelta = now.nominalProfit - laterAdjustedNominal;
+
+    return { nominalDelta };
+  }
+
+  function calculate() {
+    const p = readInputs();
+    if (!(p.price > 0 && p.loan > 0 && p.years > 0 && p.term > 0)) return;
+
+    const r = simulateScenario(p);
+    const inflFactor = Math.pow(1 + p.infl, p.years);
+    const realProfit = r.nominalProfit / inflFactor;
+
+    const offsetInterestSaved = p.offset * (Math.pow(1 + p.loanRate, p.years) - 1);
+    const offsetInvestReturn  = p.offset * (Math.pow(1 + p.oppRate,  p.years) - 1);
+    const offsetAdvantage = offsetInterestSaved - offsetInvestReturn;
+
+    const bePrice = solveBreakEvenPrice(p);
+    const beGrowth = solveBreakEvenGrowth(p);
+
+    const opt = optimizeOffset(p);
+
+    const cmp = compareBuyNowVsLater(p);
+    const nominalDeltaNowLater = cmp.nominalDelta;
+    const realDeltaNowLater = isFinite(nominalDeltaNowLater) ? (nominalDeltaNowLater / inflFactor) : NaN;
+
+    document.getElementById("kRepay").textContent = fmt0(r.monthlyRepay);
+    document.getElementById("kInterest").textContent = fmt0(r.interestPaid);
+    document.getElementById("kBal").textContent = fmt0(r.balance);
+    document.getElementById("kEq").textContent = fmt0(r.equity);
+    document.getElementById("kNom").textContent = fmt0(r.nominalProfit);
+    document.getElementById("kReal").textContent = fmt0(realProfit);
+
+    document.getElementById("kOffsetAdv").textContent = fmt0(offsetAdvantage);
+    document.getElementById("kBestOffset").textContent = isFinite(opt.bestOffset)
+      ? `${fmt0(opt.bestOffset)} (profit: ${fmt0(opt.bestProfit)})`
+      : "–";
+
+    document.getElementById("kBEP").textContent = isFinite(bePrice) ? fmt0(bePrice) : "–";
+    document.getElementById("kBEG").textContent = isFinite(beGrowth) ? fmtPct(beGrowth) : "–%";
+
+    document.getElementById("kNowLater").textContent = isFinite(nominalDeltaNowLater)
+      ? (nominalDeltaNowLater >= 0 ? `${fmt0(nominalDeltaNowLater)} (Buy now better)` : `${fmt0(nominalDeltaNowLater)} (Buy later better)`)
+      : "–";
+
+    document.getElementById("kNowLaterReal").textContent = isFinite(realDeltaNowLater) ? fmt0(realDeltaNowLater) : "–";
+
+    const rows = [
+      ["Equity after period (incl. selling costs if chosen)", r.equity],
+      ["Minus: Interest paid (period)", -r.interestPaid],
+      ["Minus: Stamp duty", -p.stamp],
+      ["Minus: Deposit", -r.deposit],
+      ["Minus: Other upfront costs", -p.upfrontOther],
+      ["Plus: Rent avoided (living in home)", r.rentSaved5y],
+      ["Minus: Rates + insurance + maintenance", -r.ownerCosts5y],
+      ["Minus: Opp. cost interest on upfront cash", -r.oppUpfrontInterest],
+      ["Minus: Opp. cost interest on monthly diff invested", -r.oppMonthlyInterest],
+      ["Minus: Opp. cost interest on offset balance", -r.oppOffsetInterest],
+      ["Nominal profit (your framework)", r.nominalProfit],
+      ["Real profit (today's $)", realProfit],
+      [" ", 0],
+      ["Helper: Investable monthly diff (if renting instead)", r.investableMonthly],
+      ["Helper: Selling costs included", r.sellingCost],
+      ["Helper: Future price (end)", r.futurePrice],
+    ];
+
+    const tbody = document.getElementById("breakdown");
+    tbody.innerHTML = rows.map(([name, val]) => `
+      <tr>
+        <td>${name}</td>
+        <td>${(name.trim()==="") ? "" : fmt0(val)}</td>
+      </tr>
+    `).join("");
+  }
+
+  document.getElementById("calcBtn").addEventListener("click", calculate);
+  document.getElementById("resetBtn").addEventListener("click", resetDefaults);
+  calculate();
+</script>
+</body>
+</html>
